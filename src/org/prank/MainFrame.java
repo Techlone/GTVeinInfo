@@ -139,15 +139,28 @@ public class MainFrame extends JFrame {
 
     private void writeWayPoint(Coord coord, String name) {
         String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
-        String fn = upName + "_" + coord.x + "," + coord.y + "," + coord.z;
+        String wpName = upName + "_" + coord.x + "," + coord.y + "," + coord.z;
+        String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
+        
+        // Translate chunk coords to block coords
+        coord.x = coord.x * 16 + 8;
+        coord.z = coord.z * 16 + 8;
+
+        // Stretch coords if nether dimension due to JourneyMap squeezing
+        if (getCurrentDimID() == -1)
+        {
+            coord.x *= 8;
+            coord.z *= 8;
+        }
+
         int hash = name.hashCode();
         StringBuilder sb = new StringBuilder("{")
-                .append("\"id\": \"").append(fn).append("\", ")
+                .append("\"id\": \"").append(wpName).append("\", ")
                 .append("\"name\": \"").append(upName).append("\", ")
                 .append("\"icon\": \"waypoint-normal.png\", ")
-                .append("\"x\": ").append(coord.x * 16 + 8).append(", ")
+                .append("\"x\": ").append(coord.x).append(", ")
                 .append("\"y\": ").append(coord.y).append(", ")
-                .append("\"z\": ").append(coord.z * 16 + 8).append(", ")
+                .append("\"z\": ").append(coord.z).append(", ")
                 .append("\"r\": ").append((hash) & 0xff).append(", ")
                 .append("\"g\": ").append((hash >> 8) & 0xff).append(", ")
                 .append("\"b\": ").append((hash >> 16) & 0xff).append(", ")
@@ -155,7 +168,7 @@ public class MainFrame extends JFrame {
                 .append("\"type\": \"Normal\", ")
                 .append("\"origin\": \"JourneyMap\", ")
                 .append("\"dimensions\": [").append(getCurrentDimID()).append("]}");
-        try (FileWriter file = new FileWriter("waypoints/" + fn + ".json")) {
+        try (FileWriter file = new FileWriter(fileName)) {
             file.write(sb.toString());
             file.flush();
         } catch (Exception e) {
