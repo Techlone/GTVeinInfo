@@ -143,14 +143,15 @@ public class MainFrame extends JFrame {
         String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
         
         // Translate chunk coords to block coords
-        coord.x = coord.x * 16 + 8;
-        coord.z = coord.z * 16 + 8;
+        int x = coord.x * 16 + 8;
+        int y = coord.y;
+        int z = coord.z * 16 + 8;
 
         // Stretch coords if nether dimension due to JourneyMap squeezing
         if (getCurrentDimID() == -1)
         {
-            coord.x *= 8;
-            coord.z *= 8;
+            x *= 8;
+            z *= 8;
         }
 
         int hash = name.hashCode();
@@ -158,9 +159,9 @@ public class MainFrame extends JFrame {
                 .append("\"id\": \"").append(wpName).append("\", ")
                 .append("\"name\": \"").append(upName).append("\", ")
                 .append("\"icon\": \"waypoint-normal.png\", ")
-                .append("\"x\": ").append(coord.x).append(", ")
-                .append("\"y\": ").append(coord.y).append(", ")
-                .append("\"z\": ").append(coord.z).append(", ")
+                .append("\"x\": ").append(x).append(", ")
+                .append("\"y\": ").append(y).append(", ")
+                .append("\"z\": ").append(z).append(", ")
                 .append("\"r\": ").append((hash) & 0xff).append(", ")
                 .append("\"g\": ").append((hash >> 8) & 0xff).append(", ")
                 .append("\"b\": ").append((hash >> 16) & 0xff).append(", ")
