@@ -8,8 +8,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
+@SuppressWarnings({"WeakerAccess", "SameParameterValue"})
 public class MainFrame extends JFrame {
     public static Map<Coord, String> result = new HashMap<>();
 
@@ -20,7 +20,6 @@ public class MainFrame extends JFrame {
     private JComboBox<String> cbDim;
     private JComboBox<String> cbOre;
     private JTextArea taOutput;
-    ;
 
     public MainFrame() throws HeadlessException {
         super("GTVeinInfo");
@@ -42,7 +41,7 @@ public class MainFrame extends JFrame {
 
         setVisible(true);
 
-        tfSeed.setText("123");
+        tfSeed.setText("");
         tfSize.setText("10");
         tfOffsetX.setText("0");
         tfOffsetZ.setText("0");
@@ -52,7 +51,6 @@ public class MainFrame extends JFrame {
         Random fmlRandom = new Random(wSeed);
         long xSeed = fmlRandom.nextLong() >> 2 + 1L;
         long zSeed = fmlRandom.nextLong() >> 2 + 1L;
-        //8487375766640924151
         fmlRandom.setSeed((xSeed * chX + zSeed * chZ) ^ wSeed);
         String oreName = String.valueOf(cbOre.getSelectedItem());
         Tuple t = generateGT(new XSTR(fmlRandom.nextInt()), chX, chZ, dim);
@@ -105,7 +103,7 @@ public class MainFrame extends JFrame {
 
     private void calculate() {
         result.clear();
-        long seed = Long.parseLong(tfSeed.getText());
+        long seed = getSeed();
         int size = Integer.parseInt(tfSize.getText()) * 3;
         int offsetX = Integer.parseInt(tfOffsetX.getText()) >> 4;
         int offsetZ = Integer.parseInt(tfOffsetZ.getText()) >> 4;
@@ -115,7 +113,7 @@ public class MainFrame extends JFrame {
             for (int z = -size; z < size; z++)
                 generate(seed, x + offsetX, z + offsetZ, dim);
 
-        List<Coord> coords = result.keySet().stream().collect(Collectors.toList());
+        List<Coord> coords = new ArrayList<>(result.keySet());
         coords.sort((l, r) -> l.x != r.x ? l.x - r.x : l.z - r.z);
         StringBuilder sb = new StringBuilder();
         coords.forEach(c -> sb
@@ -127,25 +125,43 @@ public class MainFrame extends JFrame {
         taOutput.setText(sb.toString());
     }
 
+    private long getSeed() {
+        String seedStr = tfSeed.getText();
+        if (seedStr == null || seedStr.equals("")) {
+            long newSeed = new Random().nextLong();
+            tfSeed.setText(String.valueOf(newSeed));
+            return newSeed;
+        }
+        long seed;
+        try {
+            seed = Long.parseLong(seedStr);
+        } catch (Exception e) {
+            seed = seedStr.hashCode();
+            tfSeed.setText(String.valueOf(seed));
+        }
+        return seed;
+    }
+
     private void export() {
         if (result.isEmpty())
             calculate();
         File waypoints = new File("waypoints");
         if (!waypoints.exists()) {
+            //noinspection ResultOfMethodCallIgnored
             waypoints.mkdir();
         }
         result.forEach(this::writeWayPoint);
     }
 
     private void writeWayPoint(Coord coord, String name) {
-        String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
-        String wpName = upName + "_" + coord.x + "," + coord.y + "," + coord.z;
-        String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
-        
         // Translate chunk coords to block coords
         int x = coord.x * 16 + 8;
         int y = coord.y;
         int z = coord.z * 16 + 8;
+
+        String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
+        String wpName = upName + "_" + x + "," + y + "," + z;
+        String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
 
         // Stretch coords if nether dimension due to JourneyMap squeezing
         if (getCurrentDimID() == -1)
@@ -200,13 +216,21 @@ public class MainFrame extends JFrame {
     private void setButtons() {
         setButton("Calculate", 10, 40, 95, 25, this::calculate);
         setButton("JM Export", 110, 40, 95, 25, this::export);
+        JButton btnRefresh = setButton("↻", 300, 10, 25, 25, this::refresh);
+        btnRefresh.setMargin(new Insets(0, 0, 0, 0));
     }
 
-    private void setButton(String name, int x, int y, int w, int h, Runnable action) {
+    private void refresh() {
+        tfSeed.setText("");
+        calculate();
+    }
+
+    private JButton setButton(String name, int x, int y, int w, int h, Runnable action) {
         JButton jButton = new JButton(name);
         jButton.addActionListener(e -> action.run());
         jButton.setBounds(x, y, w, h);
         add(jButton);
+        return jButton;
     }
 
     private void setInputs() {
@@ -231,11 +255,10 @@ public class MainFrame extends JFrame {
         setLabel("Z:", 360, 40, 50, 25);
     }
 
-    private JLabel setLabel(String text, int x, int y, int w, int h) {
+    private void setLabel(String text, int x, int y, int w, int h) {
         JLabel jLabel = new JLabel(text);
         jLabel.setBounds(x, y, w, h);
         add(jLabel);
-        return jLabel;
     }
 
     private void setTextAreas() {
@@ -273,12 +296,5 @@ public class MainFrame extends JFrame {
         jComboBox.setBounds(x, y, w, h);
         add(jComboBox);
         return jComboBox;
-    }
-
-    private JCheckBox setCheckBox(String name, int x, int y, int w, int h) {
-        JCheckBox jCheckBox = new JCheckBox(name);
-        jCheckBox.setBounds(x, y, w, h);
-        add(jCheckBox);
-        return jCheckBox;
     }
 }
