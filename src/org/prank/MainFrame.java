@@ -293,6 +293,7 @@ public class MainFrame extends JFrame {
         String[] ores = filteredOres.toArray(new String[0]);
         Arrays.sort(ores);
         cbOre.removeAllItems();
+        if (ores.length > 1) cbOre.addItem("all");
         for (String ore : ores) cbOre.addItem(ore);
 
         if (filteredOres.contains(oreName)) cbOre.setSelectedItem(oreName);
