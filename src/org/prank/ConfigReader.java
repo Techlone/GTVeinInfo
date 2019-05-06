@@ -71,7 +71,7 @@ public class ConfigReader {
                 } else if (name.startsWith("RandomWeight")) {
                     vein.weight = prop.getInt();
                 } else if (prop.getBoolean()) {
-                    vein.dims.add(name.substring(0, name.indexOf('_')).toLowerCase());
+                    vein.dims.add(name.substring(0, name.lastIndexOf('_')).toLowerCase());
                 }
             }
             OreVein.add(vein);

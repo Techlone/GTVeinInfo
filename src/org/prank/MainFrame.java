@@ -2,10 +2,13 @@ package org.prank;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileWriter;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.List;
 
@@ -107,7 +110,7 @@ public class MainFrame extends JFrame {
         int size = Integer.parseInt(tfSize.getText()) * 3;
         int offsetX = Integer.parseInt(tfOffsetX.getText()) >> 4;
         int offsetZ = Integer.parseInt(tfOffsetZ.getText()) >> 4;
-        String dim = String.valueOf(cbDim.getSelectedItem());
+        String dim = String.valueOf(cbDim.getSelectedItem()).toLowerCase();
 
         for (int x = -size; x < size; x++)
             for (int z = -size; z < size; z++)
@@ -164,8 +167,7 @@ public class MainFrame extends JFrame {
         String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
 
         // Stretch coords if nether dimension due to JourneyMap squeezing
-        if (getCurrentDimID() == -1)
-        {
+        if (getCurrentDimID() == -1) {
             x *= 8;
             z *= 8;
         }
@@ -195,21 +197,10 @@ public class MainFrame extends JFrame {
 
     private int getCurrentDimID() {
         String dim = String.valueOf(cbDim.getSelectedItem()).toLowerCase();
-        switch (dim) {
-            case "overworld":
-                return 0;
-            case "nether":
-                return -1;
-            case "theend":
-            case "endasteroid":
-                return 1;
-            case "moon":
-                return -28;
-            case "mars":
-                return -29;
-            case "asteroid":
-                return -30;
-        }
+        if (Dimensions.knownDimensions.containsKey(dim))
+            return Dimensions.knownDimensions.get(dim);
+        JOptionPane.showMessageDialog(this, "Ask somebody to add the dimension to code.", "Unknown dimension: " + dim, JOptionPane.WARNING_MESSAGE);
+        Dimensions.knownDimensions.put(dim, 0);
         return 0;
     }
 
@@ -279,14 +270,9 @@ public class MainFrame extends JFrame {
         String[] dims = OreVein.ores.stream().flatMap(v -> v.dims.stream()).distinct().toArray(String[]::new);
         Arrays.sort(dims);
         cbDim = setComboBox(440, 10, 100, 25, dims);
+        cbDim.addActionListener(this::refreshOres);
+        cbOre = setComboBox(440, 40, 100, 25);
         cbDim.setSelectedItem("overworld");
-        List<String> veins = new ArrayList<>(OreVein.ores.size() + 1);
-        for (OreVein ore : OreVein.ores)
-            if (!veins.contains(ore.name))
-                veins.add(Character.isDigit(ore.name.charAt(0)) ? "custom." + ore.name : ore.name);
-        Collections.sort(veins);
-        veins.add(0, "all");
-        cbOre = setComboBox(440, 40, 100, 25, veins.toArray(new String[0]));
     }
 
     @SafeVarargs
@@ -296,5 +282,19 @@ public class MainFrame extends JFrame {
         jComboBox.setBounds(x, y, w, h);
         add(jComboBox);
         return jComboBox;
+    }
+
+    private void refreshOres(ActionEvent e) {
+        String oreName = String.valueOf(cbOre.getSelectedItem()).toLowerCase();
+        String dim = String.valueOf(cbDim.getSelectedItem()).toLowerCase();
+        List<String> filteredOres = new ArrayList<>();
+        for (OreVein ore : OreVein.ores) if (ore.dims.contains(dim)) filteredOres.add(ore.name);
+
+        String[] ores = filteredOres.toArray(new String[0]);
+        Arrays.sort(ores);
+        cbOre.removeAllItems();
+        for (String ore : ores) cbOre.addItem(ore);
+
+        if (filteredOres.contains(oreName)) cbOre.setSelectedItem(oreName);
     }
 }

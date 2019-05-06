@@ -68,15 +68,15 @@ public class OreVein {
     public int weight;
 
     public OreVein(String name) {
-        this.name = name;
+        this.name = Character.isDigit(name.charAt(0)) ? "custom." + name : name;
     }
 
     public OreVein(String name, int min, int max, int weight, String[] dims) {
-        this.name = name;
+        this(name);
         this.max = max;
         this.min = min;
         this.weight = weight;
-        Collections.addAll(this.dims, dims);
+        Collections.addAll(this.dims, Arrays.stream(dims).map(String::toLowerCase).toArray(String[]::new));
     }
 
     public int executeWorldgen(Random random, String dim, int chX, int chZ) {
