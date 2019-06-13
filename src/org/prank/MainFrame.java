@@ -8,13 +8,14 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileWriter;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.List;
 
 @SuppressWarnings({"WeakerAccess", "SameParameterValue"})
 public class MainFrame extends JFrame {
     public static Map<Coord, String> result = new HashMap<>();
+    public int i = 0;
+    public List<String> buffer = new ArrayList<>();
 
     private JTextField tfSeed;
     private JTextField tfSize;
@@ -32,7 +33,7 @@ public class MainFrame extends JFrame {
             }
         });
 
-        setSize(640, 480);
+        setSize(660, 480);
         setResizable(false);
         setLayout(null);
 
@@ -145,7 +146,7 @@ public class MainFrame extends JFrame {
         return seed;
     }
 
-    private void export() {
+    private void exportJM() {
         if (result.isEmpty())
             calculate();
         File waypoints = new File("waypoints");
@@ -153,10 +154,10 @@ public class MainFrame extends JFrame {
             //noinspection ResultOfMethodCallIgnored
             waypoints.mkdir();
         }
-        result.forEach(this::writeWayPoint);
+        result.forEach(this::writeJMWayPoint);
     }
 
-    private void writeWayPoint(Coord coord, String name) {
+    private void writeJMWayPoint(Coord coord, String name) {
         // Translate chunk coords to block coords
         int x = coord.x * 16 + 8;
         int y = coord.y;
@@ -195,6 +196,60 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void exportMW() {
+        if (result.isEmpty())
+            calculate();
+        File waypoints = new File("waypoints");
+        File filename = new File("waypoints/mapwriter.cfg");
+        if (!waypoints.exists()) {
+            waypoints.mkdir();
+        }
+        if(filename.exists()) {
+            filename.delete();
+        }
+
+        StringBuilder str = new StringBuilder("# Configuration file\n\n").append("markers {\n");
+        buffer.add(str.toString());
+        result.forEach(this::writeMwWayPoint);
+        buffer.add(new StringBuilder("\tI:markerCount=").append(i)
+                .append("\n\tS:visibleGroup=all\n}\n\n\n").append("world {\n")
+                .append("\tI:dimensionalList <\n\t\t0\n \t>\n}").toString()
+        );
+        ;
+
+        for (String item : buffer) {
+            try(FileWriter file = new FileWriter("waypoints/mapwriter.cfg", true)) {
+                file.write(item);
+            } catch (Exception e ) {
+                e.printStackTrace();
+            }
+        }
+        buffer = new ArrayList<>();
+        i = 0;
+    }
+
+    private void writeMwWayPoint(Coord coord, String name) {
+        // Translate chunk coords to block coords
+        int x = coord.x * 16 + 8, y = coord.y, z = coord.z * 16 + 8;
+        String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
+        if (getCurrentDimID() == -1) {
+            x *= 8;
+            z *= 8;
+        }
+
+        int hash = name.hashCode();
+        StringBuilder sb = new StringBuilder("\t")
+                .append("S:marker").append(i).append("=").append(upName)
+                .append(":").append(x).append(":").append(y).append(":").append(z)
+                .append(":").append(getCurrentDimID()).append(":")
+                .append(Integer.toHexString((hash) & 0xff))
+                .append(Integer.toHexString((hash >> 8) & 0xff))
+                .append(Integer.toHexString((hash >> 16) & 0xff))
+                .append(":").append(upName).append("\n");
+        buffer.add(sb.toString());
+        i++;
+    }
+
     private int getCurrentDimID() {
         String dim = String.valueOf(cbDim.getSelectedItem()).toLowerCase();
         if (Dimensions.knownDimensions.containsKey(dim))
@@ -206,7 +261,8 @@ public class MainFrame extends JFrame {
 
     private void setButtons() {
         setButton("Calculate", 10, 40, 95, 25, this::calculate);
-        setButton("JM Export", 110, 40, 95, 25, this::export);
+        setButton("JM Export", 110, 40, 95, 25, this::exportJM);
+        setButton("MW Export", 210, 40, 105, 25, this::exportMW);
         JButton btnRefresh = setButton("↻", 300, 10, 25, 25, this::refresh);
         btnRefresh.setMargin(new Insets(0, 0, 0, 0));
     }
@@ -227,8 +283,8 @@ public class MainFrame extends JFrame {
     private void setInputs() {
         tfSeed = setTextField(100, 10, 200, 25);
         tfSize = setTextField(380, 10, 50, 25);
-        tfOffsetX = setTextField(300, 40, 50, 25);
-        tfOffsetZ = setTextField(380, 40, 50, 25);
+        tfOffsetX = setTextField(390, 40, 50, 25);
+        tfOffsetZ = setTextField(470, 40, 50, 25);
     }
 
     private JTextField setTextField(int x, int y, int w, int h) {
@@ -241,9 +297,9 @@ public class MainFrame extends JFrame {
     private void setLabels() {
         setLabel("World seed:", 10, 10, 70, 25);
         setLabel("Size:", 340, 10, 50, 25);
-        setLabel("Offset", 230, 40, 50, 25);
-        setLabel("X:", 280, 40, 50, 25);
-        setLabel("Z:", 360, 40, 50, 25);
+        setLabel("Offset", 320, 40, 50, 25);
+        setLabel("X:", 365, 40, 50, 25);
+        setLabel("Z:", 450, 40, 50, 25);
     }
 
     private void setLabel(String text, int x, int y, int w, int h) {
@@ -253,7 +309,7 @@ public class MainFrame extends JFrame {
     }
 
     private void setTextAreas() {
-        taOutput = setTextArea(10, 70, 615, 375);
+        taOutput = setTextArea(10, 70, 635, 375);
         taOutput.setFont(new Font("monospaced", Font.PLAIN, 12));
     }
 
@@ -271,7 +327,7 @@ public class MainFrame extends JFrame {
         Arrays.sort(dims);
         cbDim = setComboBox(440, 10, 100, 25, dims);
         cbDim.addActionListener(this::refreshOres);
-        cbOre = setComboBox(440, 40, 100, 25);
+        cbOre = setComboBox(550, 10, 100, 25);
         cbDim.setSelectedItem("overworld");
     }
 
