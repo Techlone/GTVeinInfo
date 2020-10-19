@@ -3,14 +3,12 @@ package org.prank;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileWriter;
-import java.lang.reflect.Array;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 @SuppressWarnings({"WeakerAccess", "SameParameterValue"})
 public class MainFrame extends JFrame {
@@ -32,7 +30,7 @@ public class MainFrame extends JFrame {
             }
         });
 
-        setSize(640, 480);
+        setSize(660, 480);
         setResizable(false);
         setLayout(null);
 
@@ -42,12 +40,13 @@ public class MainFrame extends JFrame {
         setTextAreas();
         setComboBoxes();
 
-        setVisible(true);
-
         tfSeed.setText("");
         tfSize.setText("10");
         tfOffsetX.setText("0");
         tfOffsetZ.setText("0");
+        cbDim.setSelectedItem("overworld");
+
+        setVisible(true);
     }
 
     public void generate(long wSeed, int chX, int chZ, String dim) {
@@ -145,24 +144,21 @@ public class MainFrame extends JFrame {
         return seed;
     }
 
-    private void export() {
+    private void exportJM() {
         if (result.isEmpty())
             calculate();
         File waypoints = new File("waypoints");
-        if (!waypoints.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            waypoints.mkdir();
-        }
-        result.forEach(this::writeWayPoint);
+        if (!waypoints.exists()) waypoints.mkdir();
+        result.forEach(this::writeJMWayPoint);
     }
 
-    private void writeWayPoint(Coord coord, String name) {
+    private void writeJMWayPoint(Coord coord, String name) {
         // Translate chunk coords to block coords
         int x = coord.x * 16 + 8;
         int y = coord.y;
         int z = coord.z * 16 + 8;
 
-        String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
+        String upName = name.substring(0, 1).toUpperCase() + name.substring(1);
         String wpName = upName + "_" + x + "," + y + "," + z;
         String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
 
@@ -172,7 +168,7 @@ public class MainFrame extends JFrame {
             z *= 8;
         }
 
-        int hash = name.hashCode();
+        Color color = getColor(name);
         StringBuilder sb = new StringBuilder("{")
                 .append("\"id\": \"").append(wpName).append("\", ")
                 .append("\"name\": \"").append(upName).append("\", ")
@@ -180,13 +176,14 @@ public class MainFrame extends JFrame {
                 .append("\"x\": ").append(x).append(", ")
                 .append("\"y\": ").append(y).append(", ")
                 .append("\"z\": ").append(z).append(", ")
-                .append("\"r\": ").append((hash) & 0xff).append(", ")
-                .append("\"g\": ").append((hash >> 8) & 0xff).append(", ")
-                .append("\"b\": ").append((hash >> 16) & 0xff).append(", ")
+                .append("\"r\": ").append(color.red).append(", ")
+                .append("\"g\": ").append(color.green).append(", ")
+                .append("\"b\": ").append(color.blue).append(", ")
                 .append("\"enable\": true, ")
                 .append("\"type\": \"Normal\", ")
                 .append("\"origin\": \"JourneyMap\", ")
                 .append("\"dimensions\": [").append(getCurrentDimID()).append("]}");
+
         try (FileWriter file = new FileWriter(fileName)) {
             file.write(sb.toString());
             file.flush();
@@ -195,8 +192,50 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void exportMW() {
+        if (result.isEmpty())
+            calculate();
+
+        StringBuilder fileBuilder = new StringBuilder()
+                .append("# Configuration file\n\n")
+                .append("markers {\n");
+
+        int id = 0;
+        for (Coord key : result.keySet())
+            fileBuilder.append(this.writeMwWayPoint(id++, key, result.get(key)));
+
+        fileBuilder
+                .append("\tI:markerCount=").append(result.size()).append("\n")
+                .append("\tS:visibleGroup=all\n}\n");
+//                .append("world {\n\tI:dimensionList <\n\t\t").append(getCurrentDimID()).append("\n\t>\n}");
+
+        try (FileWriter file = new FileWriter("mapwriter.cfg", false)) {
+            file.write(fileBuilder.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String writeMwWayPoint(int id, Coord coord, String name) {
+        // Translate chunk coords to block coords
+        int x = coord.x * 16 + 8, y = coord.y, z = coord.z * 16 + 8;
+        String upName = name.substring(0, 1).toUpperCase() + name.substring(1);
+        if (getCurrentDimID() == -1) {
+            x *= 8;
+            z *= 8;
+        }
+
+        Color color = getColor(name);
+        return "\tS:marker" + id + "=" + upName + ":" +
+                x + ":" + y + ":" + z + ":" + getCurrentDimID() + ":" +
+                color.hex + ":" + upName + "\n";
+    }
+
     private int getCurrentDimID() {
-        String dim = String.valueOf(cbDim.getSelectedItem()).toLowerCase();
+        return getDimID(String.valueOf(cbDim.getSelectedItem()).toLowerCase());
+    }
+
+    private int getDimID(String dim) {
         if (Dimensions.knownDimensions.containsKey(dim))
             return Dimensions.knownDimensions.get(dim);
         JOptionPane.showMessageDialog(this, "Ask somebody to add the dimension to code.", "Unknown dimension: " + dim, JOptionPane.WARNING_MESSAGE);
@@ -206,7 +245,8 @@ public class MainFrame extends JFrame {
 
     private void setButtons() {
         setButton("Calculate", 10, 40, 95, 25, this::calculate);
-        setButton("JM Export", 110, 40, 95, 25, this::export);
+        setButton("JM Export", 110, 40, 95, 25, this::exportJM);
+        setButton("MW Export", 210, 40, 105, 25, this::exportMW);
         JButton btnRefresh = setButton("↻", 300, 10, 25, 25, this::refresh);
         btnRefresh.setMargin(new Insets(0, 0, 0, 0));
     }
@@ -227,8 +267,8 @@ public class MainFrame extends JFrame {
     private void setInputs() {
         tfSeed = setTextField(100, 10, 200, 25);
         tfSize = setTextField(380, 10, 50, 25);
-        tfOffsetX = setTextField(300, 40, 50, 25);
-        tfOffsetZ = setTextField(380, 40, 50, 25);
+        tfOffsetX = setTextField(390, 40, 50, 25);
+        tfOffsetZ = setTextField(470, 40, 50, 25);
     }
 
     private JTextField setTextField(int x, int y, int w, int h) {
@@ -241,9 +281,9 @@ public class MainFrame extends JFrame {
     private void setLabels() {
         setLabel("World seed:", 10, 10, 70, 25);
         setLabel("Size:", 340, 10, 50, 25);
-        setLabel("Offset", 230, 40, 50, 25);
-        setLabel("X:", 280, 40, 50, 25);
-        setLabel("Z:", 360, 40, 50, 25);
+        setLabel("Offset", 320, 40, 50, 25);
+        setLabel("X:", 365, 40, 50, 25);
+        setLabel("Z:", 450, 40, 50, 25);
     }
 
     private void setLabel(String text, int x, int y, int w, int h) {
@@ -253,7 +293,7 @@ public class MainFrame extends JFrame {
     }
 
     private void setTextAreas() {
-        taOutput = setTextArea(10, 70, 615, 375);
+        taOutput = setTextArea(10, 70, 635, 375);
         taOutput.setFont(new Font("monospaced", Font.PLAIN, 12));
     }
 
@@ -271,8 +311,7 @@ public class MainFrame extends JFrame {
         Arrays.sort(dims);
         cbDim = setComboBox(440, 10, 100, 25, dims);
         cbDim.addActionListener(this::refreshOres);
-        cbOre = setComboBox(440, 40, 100, 25);
-        cbDim.setSelectedItem("overworld");
+        cbOre = setComboBox(550, 10, 100, 25);
     }
 
     @SafeVarargs
@@ -297,5 +336,24 @@ public class MainFrame extends JFrame {
         for (String ore : ores) cbOre.addItem(ore);
 
         if (filteredOres.contains(oreName)) cbOre.setSelectedItem(oreName);
+    }
+
+    private Color getColor(String name) {
+        return new Color(name.hashCode());
+    }
+
+    private static class Color {
+        public int red;
+        public int green;
+        public int blue;
+
+        public String hex;
+
+        public Color(int hash) {
+            red = (hash) & 0xff;
+            green = (hash >> 8) & 0xff;
+            blue = (hash >> 16) & 0xff;
+            hex = Integer.toHexString(hash & 0xffffff);
+        }
     }
 }
