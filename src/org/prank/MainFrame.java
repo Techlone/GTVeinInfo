@@ -3,19 +3,16 @@ package org.prank;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileWriter;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 @SuppressWarnings({"WeakerAccess", "SameParameterValue"})
 public class MainFrame extends JFrame {
     public static Map<Coord, String> result = new HashMap<>();
-    public int i = 0;
-    public List<String> buffer = new ArrayList<>();
 
     private JTextField tfSeed;
     private JTextField tfSize;
@@ -150,10 +147,7 @@ public class MainFrame extends JFrame {
         if (result.isEmpty())
             calculate();
         File waypoints = new File("waypoints");
-        if (!waypoints.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            waypoints.mkdir();
-        }
+        if (!waypoints.exists()) waypoints.mkdir();
         result.forEach(this::writeJMWayPoint);
     }
 
@@ -163,7 +157,7 @@ public class MainFrame extends JFrame {
         int y = coord.y;
         int z = coord.z * 16 + 8;
 
-        String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
+        String upName = name.substring(0, 1).toUpperCase() + name.substring(1);
         String wpName = upName + "_" + x + "," + y + "," + z;
         String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
 
@@ -173,7 +167,7 @@ public class MainFrame extends JFrame {
             z *= 8;
         }
 
-        int hash = name.hashCode();
+        Color color = getColor(name);
         StringBuilder sb = new StringBuilder("{")
                 .append("\"id\": \"").append(wpName).append("\", ")
                 .append("\"name\": \"").append(upName).append("\", ")
@@ -181,13 +175,14 @@ public class MainFrame extends JFrame {
                 .append("\"x\": ").append(x).append(", ")
                 .append("\"y\": ").append(y).append(", ")
                 .append("\"z\": ").append(z).append(", ")
-                .append("\"r\": ").append((hash) & 0xff).append(", ")
-                .append("\"g\": ").append((hash >> 8) & 0xff).append(", ")
-                .append("\"b\": ").append((hash >> 16) & 0xff).append(", ")
+                .append("\"r\": ").append(color.red).append(", ")
+                .append("\"g\": ").append(color.green).append(", ")
+                .append("\"b\": ").append(color.blue).append(", ")
                 .append("\"enable\": true, ")
                 .append("\"type\": \"Normal\", ")
                 .append("\"origin\": \"JourneyMap\", ")
                 .append("\"dimensions\": [").append(getCurrentDimID()).append("]}");
+
         try (FileWriter file = new FileWriter(fileName)) {
             file.write(sb.toString());
             file.flush();
@@ -199,59 +194,47 @@ public class MainFrame extends JFrame {
     private void exportMW() {
         if (result.isEmpty())
             calculate();
-        File waypoints = new File("waypoints");
-        File filename = new File("waypoints/mapwriter.cfg");
-        if (!waypoints.exists()) {
-            waypoints.mkdir();
-        }
-        if(filename.exists()) {
-            filename.delete();
-        }
 
-        StringBuilder str = new StringBuilder("# Configuration file\n\n").append("markers {\n");
-        buffer.add(str.toString());
-        result.forEach(this::writeMwWayPoint);
-        buffer.add(new StringBuilder("\tI:markerCount=").append(i)
-                .append("\n\tS:visibleGroup=all\n}\n\n\n").append("world {\n")
-                .append("\tI:dimensionalList <\n\t\t0\n \t>\n}").toString()
-        );
-        ;
+        StringBuilder fileBuilder = new StringBuilder()
+                .append("# Configuration file\n\n")
+                .append("markers {\n");
 
-        for (String item : buffer) {
-            try(FileWriter file = new FileWriter("waypoints/mapwriter.cfg", true)) {
-                file.write(item);
-            } catch (Exception e ) {
-                e.printStackTrace();
-            }
+        int id = 0;
+        for (Coord key : result.keySet())
+            fileBuilder.append(this.writeMwWayPoint(id++, key, result.get(key)));
+
+        fileBuilder
+                .append("\tI:markerCount=").append(result.size()).append("\n")
+                .append("\tS:visibleGroup=all\n}\n");
+//                .append("world {\n\tI:dimensionList <\n\t\t").append(getCurrentDimID()).append("\n\t>\n}");
+
+        try (FileWriter file = new FileWriter("mapwriter.cfg", false)) {
+            file.write(fileBuilder.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        buffer = new ArrayList<>();
-        i = 0;
     }
 
-    private void writeMwWayPoint(Coord coord, String name) {
+    private String writeMwWayPoint(int id, Coord coord, String name) {
         // Translate chunk coords to block coords
         int x = coord.x * 16 + 8, y = coord.y, z = coord.z * 16 + 8;
-        String upName = name.substring(0, 1).toUpperCase() + name.substring(1, name.length());
+        String upName = name.substring(0, 1).toUpperCase() + name.substring(1);
         if (getCurrentDimID() == -1) {
             x *= 8;
             z *= 8;
         }
 
-        int hash = name.hashCode();
-        StringBuilder sb = new StringBuilder("\t")
-                .append("S:marker").append(i).append("=").append(upName)
-                .append(":").append(x).append(":").append(y).append(":").append(z)
-                .append(":").append(getCurrentDimID()).append(":")
-                .append(Integer.toHexString((hash) & 0xff))
-                .append(Integer.toHexString((hash >> 8) & 0xff))
-                .append(Integer.toHexString((hash >> 16) & 0xff))
-                .append(":").append(upName).append("\n");
-        buffer.add(sb.toString());
-        i++;
+        Color color = getColor(name);
+        return "\tS:marker" + id + "=" + upName + ":" +
+                x + ":" + y + ":" + z + ":" + getCurrentDimID() + ":" +
+                color.hex + ":" + upName + "\n";
     }
 
     private int getCurrentDimID() {
-        String dim = String.valueOf(cbDim.getSelectedItem()).toLowerCase();
+        return getDimID(String.valueOf(cbDim.getSelectedItem()).toLowerCase());
+    }
+
+    private int getDimID(String dim) {
         if (Dimensions.knownDimensions.containsKey(dim))
             return Dimensions.knownDimensions.get(dim);
         JOptionPane.showMessageDialog(this, "Ask somebody to add the dimension to code.", "Unknown dimension: " + dim, JOptionPane.WARNING_MESSAGE);
@@ -327,8 +310,8 @@ public class MainFrame extends JFrame {
         Arrays.sort(dims);
         cbDim = setComboBox(440, 10, 100, 25, dims);
         cbDim.addActionListener(this::refreshOres);
-        cbOre = setComboBox(550, 10, 100, 25);
         cbDim.setSelectedItem("overworld");
+        cbOre = setComboBox(550, 10, 100, 25);
     }
 
     @SafeVarargs
@@ -353,5 +336,24 @@ public class MainFrame extends JFrame {
         for (String ore : ores) cbOre.addItem(ore);
 
         if (filteredOres.contains(oreName)) cbOre.setSelectedItem(oreName);
+    }
+
+    private Color getColor(String name) {
+        return new Color(name.hashCode());
+    }
+
+    private static class Color {
+        public int red;
+        public int green;
+        public int blue;
+
+        public String hex;
+
+        public Color(int hash) {
+            red = (hash) & 0xff;
+            green = (hash >> 8) & 0xff;
+            blue = (hash >> 16) & 0xff;
+            hex = Integer.toHexString(hash & 0xffffff);
+        }
     }
 }
