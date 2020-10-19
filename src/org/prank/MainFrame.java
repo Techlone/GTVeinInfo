@@ -40,12 +40,13 @@ public class MainFrame extends JFrame {
         setTextAreas();
         setComboBoxes();
 
-        setVisible(true);
-
         tfSeed.setText("");
         tfSize.setText("10");
         tfOffsetX.setText("0");
         tfOffsetZ.setText("0");
+        cbDim.setSelectedItem("overworld");
+
+        setVisible(true);
     }
 
     public void generate(long wSeed, int chX, int chZ, String dim) {
@@ -310,7 +311,6 @@ public class MainFrame extends JFrame {
         Arrays.sort(dims);
         cbDim = setComboBox(440, 10, 100, 25, dims);
         cbDim.addActionListener(this::refreshOres);
-        cbDim.setSelectedItem("overworld");
         cbOre = setComboBox(550, 10, 100, 25);
     }
 
