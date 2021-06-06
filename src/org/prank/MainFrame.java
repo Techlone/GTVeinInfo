@@ -147,7 +147,7 @@ public class MainFrame extends JFrame {
     private void exportJM() {
         if (result.isEmpty())
             calculate();
-        File waypoints = new File("waypoints");
+        File waypoints = new File("./waypoints");
         if (!waypoints.exists()) waypoints.mkdir();
         result.forEach(this::writeJMWayPoint);
     }
@@ -160,7 +160,7 @@ public class MainFrame extends JFrame {
 
         String upName = name.substring(0, 1).toUpperCase() + name.substring(1);
         String wpName = upName + "_" + x + "," + y + "," + z;
-        String fileName = "waypoints/" + wpName + "." + getCurrentDimID() + ".json";
+        String fileName = "./waypoints/" + wpName + "." + getCurrentDimID() + ".json";
 
         // Stretch coords if nether dimension due to JourneyMap squeezing
         if (getCurrentDimID() == -1) {
@@ -209,7 +209,7 @@ public class MainFrame extends JFrame {
                 .append("\tS:visibleGroup=all\n}\n");
 //                .append("world {\n\tI:dimensionList <\n\t\t").append(getCurrentDimID()).append("\n\t>\n}");
 
-        try (FileWriter file = new FileWriter("mapwriter.cfg", false)) {
+        try (FileWriter file = new FileWriter("./mapwriter.cfg", false)) {
             file.write(fileBuilder.toString());
         } catch (Exception e) {
             e.printStackTrace();
