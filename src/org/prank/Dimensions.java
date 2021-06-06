@@ -13,7 +13,7 @@ public class Dimensions {
         knownDimensions.put("endasteroid", 1);
         knownDimensions.put("moon", -28);
         knownDimensions.put("mars", -29);
-        knownDimensions.put("asteroid", -90);
+        knownDimensions.put("asteroid", -30);
         knownDimensions.put("barnarda_c", -1022);
         knownDimensions.put("barnarda_e", -1023);
         knownDimensions.put("barnarda_f", -1026);
