@@ -1,7 +1,7 @@
 package org.prank;
 
-import org.prank.config.ConfigCategory;
 import org.prank.config.Configuration;
+import org.prank.config.ConfigCategory;
 import org.prank.config.Property;
 
 import java.io.File;
@@ -42,6 +42,62 @@ public class ConfigReader {
         add("beryllium");
         add("oilsand");
     }};
+
+    public static void readGregTechConfig() {
+        File file = new File("GregTech.cfg");
+        if (!file.exists() || !file.canRead())
+            return;
+
+        Configuration cfg = new Configuration(file);
+        ConfigCategory wg = cfg.getCategory("undergroundfluid");
+
+
+        for (ConfigCategory configCategory : wg.getChilds()) {
+
+
+            Property dimensionProperty = configCategory.properties.get("Dimension");
+            if (dimensionProperty == null) {
+                continue;
+            }
+
+            String dimensionId = dimensionProperty.getString().toLowerCase();
+            Dimension dimension = null;
+
+            try {
+                int dimId = Integer.parseInt(dimensionId);
+                dimension = Dimension.getDimensionById(dimId);
+                if (dimension == null) {
+                    continue;
+                }
+                dimensionId = dimension.getName();
+            } catch (NumberFormatException e) {
+                dimension = Dimension.getDimensionByName(dimensionId);
+            }
+
+            if (dimension == null) {
+                continue;
+            }
+
+            int maxChance = 0;
+            dimension.getFluids().clear();
+
+            for (int i = 0; i < configCategory.getChilds().size(); i++) {
+                ConfigCategory fluidConfig = (ConfigCategory) configCategory.getChilds().toArray()[i];
+
+                int chance = fluidConfig.properties.get("Chance").getInt();
+                int amountPerOperation = fluidConfig.properties.get("DecreasePerOperationAmount").getInt();
+                int max = fluidConfig.properties.get("MaxAmount").getInt();
+                int min = fluidConfig.properties.get("MinAmount").getInt();
+                String fluidName = fluidConfig.properties.get("Registry").getString();
+
+                maxChance += chance;
+                dimension.getFluids().put(fluidName, new FluidVein(fluidName, max, min, dimensionId, amountPerOperation, chance));
+            }
+
+            dimension.setTotalChanceOfUOFluids(maxChance);
+        }
+
+    }
 
     public static void readWorldGenConfig() {
         File file = new File("WorldGeneration.cfg");

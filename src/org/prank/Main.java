@@ -1,16 +1,14 @@
 package org.prank;
 
 import javax.swing.*;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import static org.prank.ConfigReader.readWorldGenConfig;
 
 public class Main {
     public static void main(String[] args) {
         try {
-            readWorldGenConfig();
+            ConfigReader.readWorldGenConfig();
+            ConfigReader.readGregTechConfig();
             new MainFrame();
         } catch (Exception e) {
             StringWriter stringWriter = new StringWriter();

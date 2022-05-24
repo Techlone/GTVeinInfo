@@ -48,6 +48,11 @@ public class Property
         this.defaultValue = this.defaultValue.replaceFirst(", ", "");
     }
 
+    public String getString()
+    {
+        return value;
+    }
+
     /**
      * Returns the value in this property as an integer,
      * if the value is not a valid integer, it will return the initially provided default.
