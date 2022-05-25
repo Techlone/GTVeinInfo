@@ -1,14 +1,11 @@
 package org.prank.config;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class ConfigCategory
 {
     private String name;
-    private ArrayList<ConfigCategory> children = new ArrayList<>();
+    public Set<ConfigCategory> children = new HashSet<>();
     public Map<String, Property> properties = new TreeMap<>();
     public final ConfigCategory parent;
     private List<String> propertyOrder = null;
@@ -55,5 +52,13 @@ public class ConfigCategory
         if (this.propertyOrder != null && !this.propertyOrder.contains(key))
             this.propertyOrder.add(key);
         return properties.put(key, value);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Set<ConfigCategory> getChildren() {
+        return children;
     }
 }
