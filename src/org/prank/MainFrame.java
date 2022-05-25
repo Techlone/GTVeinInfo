@@ -59,7 +59,7 @@ public class MainFrame extends JFrame {
         if (t != null && t.y != -1 && (oreName.equals("all") || oreName.equals(t.s)))
             result.put(new Coord(chX, t.y, chZ), t.s);
         FluidVein fluidVein = generateGTUnderground(wSeed, chX, chZ, dim);
-        if(fluidVein != null && fluidVein.max != 0 && fluidVein.min != 0 && (oreName.equals("all") || oreName.equals("[F] " + fluidVein.name))) {
+        if (fluidVein != null && fluidVein.max != 0 && fluidVein.min != 0 && (oreName.equals("all") || oreName.equals("[F] " + fluidVein.name))) {
             result.put(new Coord(chX, 0, chZ), fluidVein.name);
         }
     }
@@ -69,9 +69,9 @@ public class MainFrame extends JFrame {
 
         Dimension dimension = Dimension.getDimensionById(dimensionId);
 
-        final XSTR tRandom = new XSTR( (seed + dimensionId * 2 +
-                ((int)Math.floor((double)chX/(double)6)) +
-                (7 * ((int)Math.floor((double)chZ/6)))));
+        final XSTR tRandom = new XSTR((seed + dimensionId * 2 +
+                ((int) Math.floor((double) chX / (double) 6)) +
+                (7 * ((int) Math.floor((double) chZ / 6)))));
 
         return dimension.getRandomFluid(tRandom);
     }
@@ -345,9 +345,11 @@ public class MainFrame extends JFrame {
         List<String> filteredOres = new ArrayList<>();
         for (OreVein ore : OreVein.ores) if (ore.dims.contains(dim)) filteredOres.add(ore.name);
         Dimension dimension = Dimension.getDimensionByName(dim);
-        dimension.getFluids().values().stream().forEach(fluidVein -> {
-            filteredOres.add("[F] " + fluidVein.name);
-        });
+        dimension.getFluids().values().stream()
+                .filter(fluidVein -> fluidVein.max != 0 && fluidVein.min != 0)
+                .forEach(fluidVein -> {
+                    filteredOres.add("[F] " + fluidVein.name);
+                });
 
         String[] ores = filteredOres.toArray(new String[0]);
         Arrays.sort(ores);
