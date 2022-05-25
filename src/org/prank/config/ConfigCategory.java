@@ -5,7 +5,7 @@ import java.util.*;
 public class ConfigCategory
 {
     private String name;
-    public Set<ConfigCategory> childs = new HashSet<>();
+    public Set<ConfigCategory> children = new HashSet<>();
     public Map<String, Property> properties = new TreeMap<>();
     public final ConfigCategory parent;
     private List<String> propertyOrder = null;
@@ -21,7 +21,7 @@ public class ConfigCategory
         this.parent = parent;
         if (parent != null)
         {
-            parent.childs.add(this);
+            parent.children.add(this);
         }
     }
 
@@ -31,7 +31,7 @@ public class ConfigCategory
         if (obj instanceof ConfigCategory)
         {
             ConfigCategory cat = (ConfigCategory)obj;
-            return name.equals(cat.name) && childs.equals(cat.childs);
+            return name.equals(cat.name) && children.equals(cat.children);
         }
 
         return false;
@@ -58,7 +58,7 @@ public class ConfigCategory
         return name;
     }
 
-    public Set<ConfigCategory> getChilds() {
-        return childs;
+    public Set<ConfigCategory> getChildren() {
+        return children;
     }
 }

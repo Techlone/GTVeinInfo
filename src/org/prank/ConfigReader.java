@@ -52,7 +52,7 @@ public class ConfigReader {
         ConfigCategory wg = cfg.getCategory("undergroundfluid");
 
 
-        for (ConfigCategory configCategory : wg.getChilds()) {
+        for (ConfigCategory configCategory : wg.getChildren()) {
 
 
             Property dimensionProperty = configCategory.properties.get("Dimension");
@@ -81,8 +81,8 @@ public class ConfigReader {
             int maxChance = 0;
             dimension.getFluids().clear();
 
-            for (int i = 0; i < configCategory.getChilds().size(); i++) {
-                ConfigCategory fluidConfig = (ConfigCategory) configCategory.getChilds().toArray()[i];
+            for (int i = 0; i < configCategory.getChildren().size(); i++) {
+                ConfigCategory fluidConfig = (ConfigCategory) configCategory.getChildren().toArray()[i];
 
                 int chance = fluidConfig.properties.get("Chance").getInt();
                 int amountPerOperation = fluidConfig.properties.get("DecreasePerOperationAmount").getInt();
