@@ -220,10 +220,6 @@ public class MainFrame extends JFrame {
         // Translate chunk coords to block coords
         int x = coord.x * 16 + 8, y = coord.y, z = coord.z * 16 + 8;
         String upName = name.substring(0, 1).toUpperCase() + name.substring(1);
-        if (getCurrentDimID() == -1) {
-            x *= 8;
-            z *= 8;
-        }
 
         Color color = getColor(name);
         return "\tS:marker" + id + "=" + upName + ":" +
